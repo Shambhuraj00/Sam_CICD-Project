@@ -1,0 +1,182 @@
+
+
+CODE:
+CREATE TABLE Customers (
+    customer_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+CREATE TABLE Orders (
+    order_id INT PRIMARY KEY,
+    customer_id INT,
+    order_date DATE,
+    total_amount DECIMAL(10, 2),
+    FOREIGN KEY (customer_id) REFERENCES Customers(customer_id)
+);
+
+CREATE TABLE Products (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(100),
+    price DECIMAL(10, 2)
+);
+
+CREATE TABLE OrderItems (
+    order_item_id INT PRIMARY KEY,
+    order_id INT,
+    product_id INT,
+    quantity INT,
+    FOREIGN KEY (order_id) REFERENCES Orders(order_id),
+    FOREIGN KEY (product_id) REFERENCES Products(product_id)
+);
+
+-- Customers
+INSERT INTO Customers VALUES
+(1, 'Alice', 'alice@example.com'),
+(2, 'Bob', 'bob@example.com'),
+(3, 'Charlie', 'charlie@example.com');
+
+-- Products
+INSERT INTO Products VALUES
+(101, 'Laptop', 800.00),
+(102, 'Phone', 500.00),
+(103, 'Headphones', 100.00);
+
+-- Orders
+INSERT INTO Orders VALUES
+(201, 1, '2025-07-01', 1300.00),
+(202, 1, '2025-07-15', 100.00),
+(203, 2, '2025-07-05', 500.00);
+
+-- OrderItems
+INSERT INTO OrderItems VALUES
+(301, 201, 101, 1),
+(302, 201, 102, 1),
+(303, 202, 103, 1),
+(304, 203, 102, 1);
+
+SELECT * FROM Customers;
+
+customer_id 	name           
+	email          
+1	Alice	alice@example.com
+2	Bob	bob@example.com
+3	Charlie	charlie@example.com
+
+SELECT * FROM Orders;
+
+order_id 	customer_id 	order_date
+	total_amount
+201	1	| 2025-07-01	1300.00
+202	1	| 2025-07-15	100.00
+203	2	| 2025-07-05	500.00
+
+SELECT * FROM Products;
+
+product_id	product_name
+	price
+101	Laptop	800.00
+102	Phone	500.00
+103	Headphones	100.00
+
+SELECT * FROM OrderItems;
+
+order_item_id	order_id
+	product_id	quantity
+301	201	101	1
+302	201	102	1
+303	202	103	1
+304	203	102	1
+
+
+
+
+-- Inner Join
+SELECT c.name, o.order_id, o.total_amount
+FROM Customers c 
+INNER JOIN Orders o ON c.customer_id = o.customer_id;
+
+name
+	order_id	total_amount
+Alice	201	1300.00
+Alice	202	100.00
+Bob	203	500.00
+
+-- Left Join
+SELECT c.name, o.order_id
+FROM Customers c
+LEFT JOIN Orders o ON c.customer_id = o.customer_id;	
+
+name	order_id
+
+Alice	201
+Alice	202
+Bob	203
+Charlie	NULL
+
+-- Right Join
+SELECT o.order_id, c.name
+FROM Orders o
+RIGHT JOIN Customers c ON o.customer_id = c.customer_id;
+
+order_id
+	name
+201	Alice
+202	Alice
+203	Bob
+NULL	Charlie
+
+-- Full Outer Join
+SELECT c.name, o.order_id, o.total_amount
+FROM Customers c
+LEFT JOIN Orders o ON c.customer_id = o.customer_id
+UNION
+SELECT c.name, o.order_id, o.total_amount
+FROM Customers c
+RIGHT JOIN Orders o ON c.customer_id = o.customer_id;
+
+name	order_id
+	total_amount
+Alice	202	100.00
+Alice	201	1300.00
+Bob	203	500.00
+Charlie	NULL	NULL
+
+
+-- Nested Subquery
+SELECT DISTINCT p.product_name
+FROM Products p
+WHERE p.product_id IN (
+    SELECT oi.product_id
+    FROM OrderItems oi
+    WHERE oi.order_id IN (
+        SELECT o.order_id
+        FROM Orders o
+        WHERE o.customer_id = (
+            SELECT customer_id
+            FROM Customers
+            WHERE name = 'Alice'
+        )
+    )
+);
+
+
+product_name
+
+Laptop
+Phone
+Headphones
+
+-- Create a View
+CREATE VIEW CustomerOrderSummary AS
+SELECT c.customer_id, c.name AS customer_name, o.order_id, o.total_amount
+FROM Customers c
+JOIN Orders o ON c.customer_id = o.customer_id;
+
+-- Query the View
+SELECT * FROM CustomerOrderSummary WHERE total_amount > 500;
+
+customer_id
+	customer_name	order_id	total_amount
+1	Alice	201	1300.00
+
